@@ -442,9 +442,9 @@ function sessCard(s){
       return (no.length?'<div class="vline"><span class="vt n">불참 '+no.length+'</span><span>'+no.map(function(id){return esc(nm(id))}).join(", ")+'</span></div>':'')+
         (na.length?'<div class="vline"><span class="vt">미응답 '+na.length+'</span><span class="muted">'+na.map(function(id){return esc(nm(id))}).join(", ")+'</span></div>':'')})()+
     (hasTeams?'<div class="row between"><div class="legend">'+(games.length>1?'<span><b>포메이션 '+games.length+'개</b></span>':'')+TK.filter(function(k){return tc[k].length}).map(function(k){return '<span><i class="dot '+k+'"></i>'+tn(k)+' '+tc[k].length+'명</span>'}).join("")+(games.length>1?'<span class="muted">(1경기 기준)</span>':'')+'</div></div>':"")+
-    '<div class="cardacts"><button class="btn sm ghost" data-act="copySched" data-id="'+s.id+'"'+(s.closed?'':' disabled title="출석 투표를 마감하면 누를 수 있어요"')+'>📋 일정 복사</button>'+
+    (isAdmin()?'<div class="cardacts"><button class="btn sm ghost" data-act="copySched" data-id="'+s.id+'"'+(s.closed?'':' disabled title="출석 투표를 마감하면 누를 수 있어요"')+'>📋 일정 복사</button>'+
     (hasTeams?'<button class="btn sm ghost" data-act="copyTeams" data-id="'+s.id+'">📝 팀 구성 복사</button><button class="btn sm ghost" data-act="shareForm" data-id="'+s.id+'">🖼 포메이션 이미지</button>':'')+
-    (s.closed?'':'<span class="sm muted">일정 복사는 투표 마감 후에 돼요</span>')+'</div>'+
+    (s.closed?'':'<span class="sm muted">일정 복사는 투표 마감 후에 돼요</span>')+'</div>':'')+
     '</div>';
 }
 
@@ -867,9 +867,9 @@ document.addEventListener("click",function(e){
     case"gAdd":if(TD.games.length<MAXG){TD.games.push(JSON.parse(JSON.stringify(TD.games[TD.gi])));useGame(TD.games.length-1);drawTeams();toast((TD.gi+1)+"경기 포메이션을 추가했어요")}break;
     case"gDel":if(!TD.delAsk){TD.delAsk=true;drawTeams();break}TD.games.splice(TD.gi,1);useGame(Math.max(0,TD.gi-1));drawTeams();break;
     case"teamSave":{var gs=TD.games.filter(function(g,i){return i===0||Object.keys(g.teams).length});closeSheet();act(call("saveTeams",A,TD.sid,(gs[0]&&gs[0].teams)||{},{v:2,games:gs}),"포메이션 "+gs.length+"개를 저장했어요");break;}
-    case"copyTeams":{var s=S.d.sessions.filter(function(x){return x.id===id})[0];copyText(teamsText(s));break;}
-    case"copySched":{var s=S.d.sessions.filter(function(x){return x.id===id})[0];if(!s||!s.closed){toast("출석 투표를 마감한 뒤에 복사할 수 있어요");break}copyText(schedText(s));break;}
-    case"shareForm":{var s=S.d.sessions.filter(function(x){return x.id===id})[0];shareFormation(s);break;}
+    case"copyTeams":{if(!isAdmin())break;var s=S.d.sessions.filter(function(x){return x.id===id})[0];copyText(teamsText(s));break;}
+    case"copySched":{if(!isAdmin())break;var s=S.d.sessions.filter(function(x){return x.id===id})[0];if(!s||!s.closed){toast("출석 투표를 마감한 뒤에 복사할 수 있어요");break}copyText(schedText(s));break;}
+    case"shareForm":{if(!isAdmin())break;var s=S.d.sessions.filter(function(x){return x.id===id})[0];shareFormation(s);break;}
     case"newMatch":matchSheet();break;
     case"editMatch":matchSheet(id);break;
     case"matchFill":readMatch();MD.fpick=!MD.fpick;drawMatch();break;
