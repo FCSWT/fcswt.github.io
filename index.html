@@ -94,6 +94,17 @@ p{margin:0}
 .cin{display:flex;gap:6px;align-items:center}.cin input{flex:1;min-width:0;border:1px solid var(--line);border-radius:20px;padding:9px 14px;font-size:16px;background:var(--surface);color:var(--fg)}
 .rto{font-size:12px;background:var(--sunk);color:var(--brand);border-radius:8px;padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
 .cmclosed{font-size:13px;color:var(--muted);background:var(--sunk);border-radius:9px;padding:8px 10px}
+.tops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card.tk{padding:12px 12px 10px;gap:6px}
+.toph{display:flex;align-items:center;gap:6px;font-size:15px}.toph b{font-weight:800}
+.tk ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.tk li{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:8px;font-size:15px}
+.tk .rk{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--sunk);color:var(--muted)}
+.tk li.r1 .rk{background:var(--brand);color:var(--brand-ink)}
+.tk .tn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .tv{font-variant-numeric:tabular-nums;font-size:16px}.tk .tv small{font-size:11px;font-weight:400;color:var(--muted);margin-left:1px}
+.tk li.me{background:var(--sunk)}.tk li.me .tn{font-weight:700}
+.tmore{font-size:12px;color:var(--muted);text-align:right;padding:2px 4px 0}
 .cardacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
 .closed{background:var(--sunk);border-radius:9px;padding:10px 12px;font-size:14px}
 .closebar{border-top:1px dashed var(--line);padding-top:8px}.closebar .cl{color:var(--no)}.closebar .op{color:var(--pitch)}
@@ -542,7 +553,19 @@ function viewStats(){
     st.map(function(x){function c(f,v){return '<td class="n2">'+(k===f?"<b>"+v+"</b>":v)+'</td>'}
       var num=S.members[x.id]&&S.members[x.id].num;return '<tr><td style="white-space:nowrap"><span class="numtag">'+esc(num||"–")+'</span>'+esc(nm(x.id))+(x.id===myId()?' <span class="muted sm">(나)</span>':"")+'</td>'+c("att",x.att+(past?'<span class="muted sm"> /'+past+'</span>':""))+c("apps",x.apps)+c("goals",x.goals)+c("ast",x.ast)+c("cs",x.cs)+'<td class="muted" style="white-space:nowrap">'+esc(posText(x.bp)||"–")+'</td></tr>'}).join("")+'</tbody></table></div>'+
     '<p class="sm muted">참석은 오늘까지 지난 일정에서 출석 투표를 ‘참석’으로 한 횟수예요. 출전은 경기 기록의 뛴 인원 기준이에요.</p>';
+  h+=topHTML(st);
   return h;
+}
+function topHTML(st){
+  var cats=[["goals","⚽","골","골"],["ast","🅰️","도움","개"],["cs","🧤","클린시트","회"],["att","🙋","참석","회"]];
+  return '<h2>부문별 TOP 5</h2><div class="tops">'+cats.map(function(c){
+    var L=st.filter(function(x){return x[c[0]]>0}).slice().sort(function(a,b){return b[c[0]]-a[c[0]]||String(nm(a.id)).localeCompare(nm(b.id),"ko")});
+    var rows=[],rk=0,prev=null;L.forEach(function(x,i){if(x[c[0]]!==prev){rk=i+1;prev=x[c[0]]}if(rk<=5)rows.push([rk,x])});var more=rows.length-5;if(more>0)rows=rows.slice(0,5);
+    return '<div class="card tk"><div class="toph"><span>'+c[1]+'</span><b>'+c[2]+' TOP 5</b></div>'+
+      (rows.length?'<ol>'+rows.map(function(r){var x=r[1],me=x.id===myId();
+        return '<li class="'+(r[0]===1?"r1":"")+(me?" me":"")+'"><span class="rk">'+r[0]+'</span><span class="tn">'+esc(nm(x.id))+'</span><b class="tv">'+x[c[0]]+'<small>'+c[3]+'</small></b></li>'}).join("")+'</ol>'+(more>0?'<div class="tmore">공동 '+rows[4][0]+'위 외 '+more+'명</div>':'')
+        :'<p class="sm muted" style="margin:6px 0 0">아직 기록이 없어요</p>')+'</div>'}).join("")+'</div>'+
+    '<p class="sm muted">같은 기록이면 같은 순위로 함께 보여요. 시즌 버튼을 바꾸면 그 시즌 기준으로 바뀌어요.</p>';
 }
 function posText(bp){return Object.keys(bp).sort(function(a,b){return bp[b]-bp[a]||POS.indexOf(a)-POS.indexOf(b)}).map(function(p){return p+" "+bp[p]}).join(" · ")}
 function countText(o){o=o||{};return Object.keys(o).filter(function(id){return o[id]>0}).sort(function(a,b){return o[b]-o[a]}).map(function(id){return nm(id)+(o[id]>1?" "+o[id]:"")})}
