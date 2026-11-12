@@ -80,6 +80,20 @@ p{margin:0}
 .seg button[aria-pressed="true"].n{background:var(--no);color:#fff}
 .seg button[aria-pressed="true"].m{background:var(--sunk)}
 .vline{display:flex;gap:8px;align-items:baseline;font-size:14px;line-height:1.5}.vline .vt{flex:none;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:var(--sunk);color:var(--muted)}.vline .vt.n{color:var(--no)}
+.cm{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.cmh{display:flex;justify-content:space-between;align-items:center;font:inherit;font-weight:700;font-size:15px;background:none;border:0;padding:2px 0;color:var(--fg);cursor:pointer;width:100%;text-align:left}.cmh .muted{font-weight:400}
+.c{display:flex;gap:8px;align-items:flex-start}
+.c .av{flex:none;width:30px;height:30px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--pitch)}
+.c .bd{background:var(--sunk);border-radius:12px;padding:7px 10px}
+.c .nm{font-size:13px;font-weight:700}.c .nm em{font-style:normal;font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.c .tx{font-size:15px;line-height:1.45;margin-top:1px;white-space:pre-wrap;word-break:break-word}
+.c .ac{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-top:2px;padding-left:2px}
+.lk{background:none;border:0;padding:2px 0;font:inherit;color:inherit;cursor:pointer}.lk b{color:var(--fg)}
+.c.reply{margin-left:38px}.c.reply .av{width:26px;height:26px;font-size:11px}
+.c.mk .bd{outline:2px solid var(--brand);outline-offset:2px}
+.cin{display:flex;gap:6px;align-items:center}.cin input{flex:1;min-width:0;border:1px solid var(--line);border-radius:20px;padding:9px 14px;font-size:16px;background:var(--surface);color:var(--fg)}
+.rto{font-size:12px;background:var(--sunk);color:var(--brand);border-radius:8px;padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
+.cmclosed{font-size:13px;color:var(--muted);background:var(--sunk);border-radius:9px;padding:8px 10px}
 .cardacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
 .closed{background:var(--sunk);border-radius:9px;padding:10px 12px;font-size:14px}
 .closebar{border-top:1px dashed var(--line);padding-top:8px}.closebar .cl{color:var(--no)}.closebar .op{color:var(--pitch)}
@@ -445,8 +459,38 @@ function sessCard(s){
     (isAdmin()?'<div class="cardacts"><button class="btn sm ghost" data-act="copySched" data-id="'+s.id+'"'+(s.closed?'':' disabled title="출석 투표를 마감하면 누를 수 있어요"')+'>📋 일정 복사</button>'+
     (hasTeams?'<button class="btn sm ghost" data-act="copyTeams" data-id="'+s.id+'">📝 팀 구성 복사</button><button class="btn sm ghost" data-act="shareForm" data-id="'+s.id+'">🖼 포메이션 이미지</button>':'')+
     (s.closed?'':'<span class="sm muted">일정 복사는 투표 마감 후에 돼요</span>')+'</div>':'')+
+    cmHTML(s)+
     '</div>';
 }
+/* ── 일정 댓글 ── */
+function cmTime(at){if(!at)return"";var d=at.slice(0,10),t=at.slice(11,16),td=today(),y=new Date();y.setDate(y.getDate()-1);
+  var yd=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+  return (d===td?"오늘":d===yd?"어제":(+d.slice(5,7))+"/"+(+d.slice(8)))+" "+t}
+function cmOne(c,sid,isReply,past){var m=S.members[c.mid],own=(c.mid&&c.mid===myId())||(!c.mid&&!myId()&&isAdmin());
+  var av=m?(m.num||m.name.slice(0,1)):"운영",name=m?m.name:(c.name||"운영진"),rp=S.reply&&S.reply[sid]===c.id;
+  return '<div class="c'+(isReply?" reply":"")+(rp?" mk":"")+'"><div class="av">'+esc(av)+'</div><div style="flex:1;min-width:0"><div class="bd"><div class="nm">'+esc(name)+'<em>'+esc(cmTime(c.at))+'</em></div><div class="tx">'+esc(c.text)+'</div></div>'+
+    '<div class="ac">'+(past?'':'<button class="lk" data-act="cmReply" data-id="'+sid+'" data-c="'+c.id+'"><b>답글</b></button>')+((own||isAdmin())&&c.id.indexOf("tmp")!==0?'<button class="lk" data-act="cmDel" data-c="'+c.id+'">삭제</button>':'')+'</div></div></div>'}
+function cmHTML(s){
+  var past=s.date<today(),list=((S.d.comments||{})[s.id])||[],open=!!(S.cmOpen&&S.cmOpen[s.id]);S.cmDraft=S.cmDraft||{};
+  var tops=list.filter(function(c){return !c.pid||!list.some(function(x){return x.id===c.pid})}),kids={};
+  list.forEach(function(c){if(c.pid&&tops.some(function(t){return t.id===c.pid}))(kids[c.pid]=kids[c.pid]||[]).push(c)});
+  var h='<div class="cm"><button class="cmh" data-act="cmToggle" data-id="'+s.id+'"><span>💬 댓글 '+list.length+'</span><span class="muted sm">'+(open?"접기 ▴":(list.length||past?"펼치기 ▾":"댓글 쓰기 ▾"))+'</span></button>';
+  if(!open){var last=list[list.length-1];if(last)h+=cmOne(last,s.id,!!last.pid&&false,true)}
+  else{h+=tops.map(function(t){return cmOne(t,s.id,false,past)+(kids[t.id]||[]).map(function(r){return cmOne(r,s.id,true,past)}).join("")}).join("");
+    if(!list.length&&!past)h+='<p class="sm muted" style="margin:0">첫 댓글을 남겨 보세요. 늦는다면 미리 알려 주세요!</p>';
+    if(!past){var rt=S.reply&&S.reply[s.id],rc=rt&&list.filter(function(c){return c.id===rt})[0],rn=rc?((S.members[rc.mid]||{}).name||rc.name||"운영진"):"";
+      if(rc)h+='<div class="rto"><span>↪ <b>'+esc(rn)+'</b>님에게 답글 쓰는 중</span><button class="lk" data-act="cmReplyX" data-id="'+s.id+'">취소 ✕</button></div>';
+      h+='<div class="cin"><input class="cinput" data-id="'+s.id+'" maxlength="200" enterkeyhint="send" placeholder="'+(rc?"답글을 남겨 주세요":"댓글을 남겨 주세요 (200자)")+'" value="'+esc(S.cmDraft[s.id]||"")+'"><button class="btn primary sm" data-act="cmSend" data-id="'+s.id+'">등록</button></div>'}}
+  if(past)h+='<div class="cmclosed">🔒 지난 일정이라 새 댓글은 달 수 없어요. 다음 일정에 남겨 주세요.</div>';
+  return h+'</div>'}
+function cmSend(sid){var inp=document.querySelector('.cinput[data-id="'+sid+'"]'),txt=(inp?inp.value:"").trim();if(!txt){toast("댓글 내용을 입력해 주세요");return}
+  if(!myId()&&!isAdmin()){toast("로그인해야 댓글을 쓸 수 있어요");return}
+  var pid=(S.reply&&S.reply[sid])||"";S.d.comments=S.d.comments||{};var list=S.d.comments[sid]=(S.d.comments[sid]||[]);
+  var par=list.filter(function(c){return c.id===pid})[0];if(par&&par.pid)pid=par.pid;
+  var n=new Date(),at=today()+" "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");
+  list.push({id:"tmp"+Date.now(),pid:pid,mid:myId()||"",name:myId()?nm(myId()):"운영진",text:txt,at:at});
+  S.cmDraft[sid]="";if(S.reply)delete S.reply[sid];render();
+  call("addComment",A,sid,pid,txt).then(function(){return refresh()}).catch(function(e){fail(e);refresh()})}
 
 /* ---- 경기 ---- */
 /* ── 시즌(연도) ── */
@@ -840,6 +884,13 @@ document.addEventListener("click",function(e){
       if(S.d.leave&&S.d.leave[id])delete S.d.leave[id][myId()];render();
       call("vote",A,id,v).catch(function(err){fail(err);refresh()});break;}
     case"leave":leaveSheet(id);break;
+    case"cmToggle":S.cmOpen=S.cmOpen||{};S.cmOpen[id]=!S.cmOpen[id];render();break;
+    case"cmReply":S.reply=S.reply||{};S.reply[id]=b.dataset.c;S.cmOpen=S.cmOpen||{};S.cmOpen[id]=true;render();setTimeout(function(){var i=document.querySelector('.cinput[data-id="'+id+'"]');if(i)i.focus()},50);break;
+    case"cmReplyX":if(S.reply)delete S.reply[id];render();break;
+    case"cmSend":cmSend(id);break;
+    case"cmDel":{if(b.dataset.ask!=="1"){b.dataset.ask="1";b.textContent="한 번 더 누르면 삭제";setTimeout(function(){if(b.isConnected){b.dataset.ask="";b.textContent="삭제"}},3000);break}
+      var cid=b.dataset.c;Object.keys(S.d.comments||{}).forEach(function(k){S.d.comments[k]=S.d.comments[k].filter(function(c){return c.id!==cid&&c.pid!==cid})});render();
+      call("deleteComment",A,cid).then(function(){toast("댓글을 지웠어요");return refresh()}).catch(function(e){fail(e);refresh()});break;}
     case"closeVote":{var cv=b.dataset.v==="1";act(call("closeVote",A,id,cv),cv?"출석 투표를 마감했어요":"마감을 취소했어요. 다시 투표할 수 있어요");break;}
     case"leavePick":{var lv=$("#lv-time");if(lv)lv.value=b.dataset.t;document.querySelectorAll("[data-act=leavePick]").forEach(function(x){x.setAttribute("aria-pressed",x===b)});break;}
     case"leaveSave":{var tt=($("#lv-time")||{}).value||"";if(!/^\d{1,2}:\d{2}$/.test(tt)){toast("조퇴 시간을 골라 주세요");break}
@@ -960,6 +1011,8 @@ document.addEventListener("submit",function(e){
     closeSheet();act(call("saveClub",A,{name:v("c-name"),place:v("c-place")}),"저장했어요");
   }
 });
+document.addEventListener("input",function(e){var t=e.target;if(t.classList&&t.classList.contains("cinput")){S.cmDraft=S.cmDraft||{};S.cmDraft[t.dataset.id]=t.value}});
+document.addEventListener("keydown",function(e){var t=e.target;if(e.key==="Enter"&&!e.isComposing&&t.classList&&t.classList.contains("cinput")){e.preventDefault();cmSend(t.dataset.id)}});
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&S.d)refresh()});
 
 call("getPublic").then(function(p){S.club=p.club;$("#clubName").textContent=S.club;document.title=S.club;if(!S.d)render()}).catch(function(){});
