@@ -228,7 +228,7 @@ details[open]>summary::after{content:" ▴"}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="brand"><div class="logo"><i class="crest crest-h" aria-hidden="true"></i><h1 id="clubName">조기축구회</h1></div><div class="side" id="side"></div></div>
+  <div class="brand"><div class="logo"><i class="crest crest-h" aria-hidden="true"></i><h1 id="clubName">FC 수원호랑이</h1></div><div class="side" id="side"></div></div>
   <nav class="tabs" id="tabs" role="tablist"></nav>
 </div></header>
 <main><div class="wrap" id="main"><div class="empty"><b>불러오는 중…</b>잠시만 기다려 주세요.</div></div></main>
@@ -300,7 +300,7 @@ function tbadge(side){return '<span class="tbadge '+side.color+'">'+(side.color=
 var DOW="일월화수목금토";
 var KEY="fcClubAuth";
 var A=loadAuth();
-var S={d:null,members:{},tab:"sched",month:ym(new Date()),showPast:false,club:"조기축구회",gateMode:"login",gateMsg:null};
+var S={d:null,members:{},tab:"sched",month:ym(new Date()),showPast:false,club:"FC 수원호랑이",gateMode:"login",gateMsg:null};
 function $(s){return document.querySelector(s)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
@@ -903,7 +903,7 @@ document.addEventListener("submit",function(e){
 });
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&S.d)refresh()});
 
-call("getPublic").then(function(p){S.club=p.club;$("#clubName").textContent=S.club;document.title=S.club}).catch(function(){});
+call("getPublic").then(function(p){S.club=p.club;$("#clubName").textContent=S.club;document.title=S.club;if(!S.d)render()}).catch(function(){});
 if(A.pw||A.mid){var cd=cachedData();if(cd){applyData(cd);render()}refresh()}else render();
 if(!IS_GAS&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
 })();
