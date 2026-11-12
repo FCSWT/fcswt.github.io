@@ -329,16 +329,17 @@ var CHANGELOG=[
   var x0=0,y0=0,t0=0,dx=0,mode=0,busy=false;   // mode: 0 판단 전, 1 가로(탭 넘기기), -1 세로/무시
   var SKIP=".pitch,.slot,input,textarea,select,[contenteditable],.noswipe";
   var sc=null;
-  function hScroll(el){for(;el&&el!==mainEl;el=el.parentElement){if(el.scrollWidth>el.clientWidth+2){var o=getComputedStyle(el).overflowX;if(o==="auto"||o==="scroll")return el}}return null}
+  function hScroll(el){for(;el&&el!==mainEl&&el!==document.body;el=el.parentElement){if(el.scrollWidth>el.clientWidth+2){var o=getComputedStyle(el).overflowX;if(o==="auto"||o==="scroll")return el}}return null}
   function wrap(){return $("#main")}
   function tabIdx(){for(var i=0;i<TABS.length;i++)if(TABS[i][0]===S.tab)return i;return 0}
-  mainEl.addEventListener("touchstart",function(e){
+  document.addEventListener("touchstart",function(e){
     mode=0;dx=0;
-    if(busy||!S.d||e.touches.length!==1||e.target.closest(SKIP)){mode=-1;return}
+    var tg=e.target,inMain=tg===document.body||tg===document.documentElement||(tg.closest&&tg.closest("main"));
+    if(busy||!S.d||!inMain||document.querySelector("#sheetRoot .scrim")||e.touches.length!==1||(tg.closest&&tg.closest(SKIP))){mode=-1;return}
     sc=hScroll(e.target);
     x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();
   },{passive:true});
-  mainEl.addEventListener("touchmove",function(e){
+  document.addEventListener("touchmove",function(e){
     if(mode===-1)return;
     var x=e.touches[0].clientX,y=e.touches[0].clientY;dx=x-x0;var dy=y-y0;
     if(mode===0){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;mode=Math.abs(dx)>Math.abs(dy)*1.3?1:-1;
@@ -364,8 +365,8 @@ var CHANGELOG=[
       setTimeout(function(){busy=false;w2.style.transition=""},240);
     },160);
   }
-  mainEl.addEventListener("touchend",end,{passive:true});
-  mainEl.addEventListener("touchcancel",function(){mode=1;dx=0;end()},{passive:true});
+  document.addEventListener("touchend",end,{passive:true});
+  document.addEventListener("touchcancel",function(){mode=1;dx=0;end()},{passive:true});
 })();
 /* ── 홈 화면 추가 안내 ── */
 var UA=navigator.userAgent||"";
