@@ -106,6 +106,25 @@ p{margin:0}
 .tk .tv{font-variant-numeric:tabular-nums;font-size:16px}.tk .tv small{font-size:11px;font-weight:400;color:var(--muted);margin-left:1px}
 .tk li.me{background:var(--sunk)}.tk li.me .tn{font-weight:700}
 .tmore{font-size:12px;color:var(--muted);text-align:right;padding:2px 4px 0}
+/* 공지·투표 */
+.ntc .ntmeta{font-size:12px;color:var(--muted)}
+.ntc h3{margin:0;font-size:18px;line-height:1.35;word-break:break-word}
+.ntc .ntbody{font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.nttag{font-size:12px;font-weight:800;border-radius:999px;padding:2px 8px;background:var(--sunk);color:var(--muted);display:inline-block}
+.nttag.pin{background:var(--brand);color:#fff}.nttag.poll{background:#e6f2ff;color:#1d5fb8}.nttag.todo{background:var(--warn-soft);color:var(--late)}
+.ntopt{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;overflow:hidden;font-size:15px;font-weight:600;background:var(--surface);color:var(--fg);text-align:left}
+button.ntopt{cursor:pointer}
+.ntopt .bar{position:absolute;inset:0 auto 0 0;background:rgba(255,20,147,.12);z-index:0;transition:width .25s}
+.ntopt>span{position:relative;z-index:1}.ntopt .cnt{font-weight:800;font-variant-numeric:tabular-nums;flex:none}
+.ntopt .lab{min-width:0;word-break:break-word}
+.ntopt.me{border-color:var(--brand)}.ntopt.me .lab::before{content:"✓ ";color:var(--brand);font-weight:900}
+.ntopt.win .bar{background:rgba(255,20,147,.24)}
+.ntwho{font-size:12px;color:var(--muted);margin:-4px 0 0 4px}
+.ntft{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.ntban{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;border-radius:10px;padding:11px 14px;background:var(--brand);color:#fff;font-weight:700;font-size:15px;text-align:left;cursor:pointer}
+.ntform textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;font-size:16px;width:100%;min-height:90px;resize:vertical}
+.ntform .chk{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:15px}.ntform .chk label{display:flex;gap:6px;align-items:center}
+.ntform .opts{display:flex;flex-direction:column;gap:6px}
 .cardacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
 .closed{background:var(--sunk);border-radius:9px;padding:10px 12px;font-size:14px}
 .closebar{border-top:1px dashed var(--line);padding-top:8px}.closebar .cl{color:var(--no)}.closebar .op{color:var(--pitch)}
@@ -465,16 +484,17 @@ function refresh(){
 function act(p,msg){document.body.classList.add("loading");return p.then(function(r){if(msg)toast(msg);return refresh().then(function(){return r})}).catch(function(e){document.body.classList.remove("loading");fail(e)})}
 
 /* ---------- 화면 ---------- */
-var TABS=[["sched","일정·출석"],["match","경기 기록"],["team","팀 기록"],["stats","개인 기록"],["dues","회비"],["roster","회원"]];
+var TABS=[["sched","일정·출석"],["notice","공지"],["match","경기 기록"],["team","팀 기록"],["stats","개인 기록"],["dues","회비"],["roster","회원"]];
 function render(){
   $("#clubName").textContent=S.club;document.title=S.club;
   if(!S.d){renderGate();return}
   var me=S.members[myId()];
   $("#side").innerHTML='<span class="who">'+(me?'<span class="whonm">'+esc(me.name)+" · </span>":"")+(isAdmin()?(S.d.staff||myId()&&S.members[myId()]&&S.members[myId()].staff?"운영진":"관리자"):"회원")+'</span><button data-act="reload" aria-label="새로고침">↻</button><button data-act="logout">로그아웃</button>';
-  var reqN=isAdmin()?S.d.requests.length:0;
-  $("#tabs").innerHTML=TABS.map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+(t[0]==="roster"&&reqN?'<span class="badge">'+reqN+'</span>':"")+'</button>'}).join("");
+  var reqN=isAdmin()?S.d.requests.length:0;if(S.tab==="notice")ntMarkSeen();
+  var bc={roster:reqN,sched:schedTodo(),notice:ntNewCount()};
+  $("#tabs").innerHTML=TABS.map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'">'+t[1]+(bc[t[0]]?'<span class="badge">'+bc[t[0]]+'</span>':"")+'</button>'}).join("");
   var m=$("#main");
-  m.innerHTML=a2hsBanner()+(S.tab==="sched"?viewSched():S.tab==="match"?viewMatch():S.tab==="team"?viewTeam():S.tab==="stats"?viewStats():S.tab==="dues"?viewDues():viewRoster())+verHTML();
+  m.innerHTML=a2hsBanner()+(S.tab==="sched"?ntBanner()+viewSched():S.tab==="notice"?viewNotice():S.tab==="match"?viewMatch():S.tab==="team"?viewTeam():S.tab==="stats"?viewStats():S.tab==="dues"?viewDues():viewRoster())+verHTML();
 }
 
 function renderGate(){
@@ -742,6 +762,77 @@ function viewRoster(){
 function openSheet(title,body){var pv=document.querySelector(".sheet"),keep=pv&&pv.getAttribute("aria-label")===title?pv.scrollTop:0;$("#sheetRoot").innerHTML='<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-label="'+esc(title)+'"><div class="head"><h2>'+esc(title)+'</h2><button class="btn ghost sm" data-act="close">닫기</button></div>'+body+'</div></div>';if(keep){var nv=document.querySelector(".sheet");if(nv)nv.scrollTop=keep}}
 function closeSheet(){$("#sheetRoot").innerHTML=""}
 
+/* ── 공지·투표 ── */
+function ntSeenKey(){return "fcNtSeen:"+(myId()||"pw")}
+function ntSeen(){try{return localStorage.getItem(ntSeenKey())||""}catch(e){return""}}
+function ntMarkSeen(){var m="";(S.d.notices||[]).forEach(function(n){if(n.at>m)m=n.at});try{if(m)localStorage.setItem(ntSeenKey(),m)}catch(e){}}
+function ntTodo(n){return n.poll&&!n.closed&&!!myId()&&!(n.mine&&n.mine.length)}
+function ntNewCount(){var seen=ntSeen(),c=0;(S.d.notices||[]).forEach(function(n){if(ntTodo(n)||(!n.poll&&n.at>seen&&n.by!==myId()))c++});return c}
+function schedTodo(){if(!myId())return 0;var t=today();return S.d.sessions.filter(function(s){return s.date>=t&&!s.closed&&!(S.d.att[s.id]||{})[myId()]}).length}
+function ntDue(d){if(!d)return"";return fmtDate(d.slice(0,10))+" "+d.slice(11,16)}
+function ntBanner(){var c=ntNewCount();return c?'<button class="ntban" data-tab="notice"><span>📢 새 공지·투표 '+c+'개</span><span>보기 ›</span></button>':""}
+function ntCard(n){
+  var h='<div class="card ntc"><div class="row between"><span class="row" style="gap:6px">'+(n.pin?'<span class="nttag pin">📌 고정</span>':"")+
+    (n.poll?'<span class="nttag'+(n.closed?"":" poll")+'">🗳 투표 · '+(n.closed?"마감":"진행 중")+'</span>':'<span class="nttag">공지</span>')+
+    (ntTodo(n)?'<span class="nttag todo">미투표</span>':"")+'</span><span class="ntmeta">'+fmtDate(n.at.slice(0,10))+' · '+esc(n.byName||"운영진")+'</span></div>'+
+    '<h3>'+esc(n.title)+'</h3>'+(n.body?'<div class="ntbody">'+esc(n.body)+'</div>':"");
+  if(n.poll){
+    var max=Math.max.apply(null,n.counts.concat([0])),can=!n.closed&&!!myId();
+    if(n.multi&&!n.closed)h+='<div class="ntmeta">여러 개 고를 수 있어요</div>';
+    n.opts.forEach(function(o,k){
+      var c=n.counts[k]||0,pct=n.total?Math.round(c/n.total*100):0,me=(n.mine||[]).indexOf(k)>=0,win=n.closed&&c>0&&c===max;
+      var inner='<span class="bar" style="width:'+pct+'%"></span><span class="lab">'+(win?"🏆 ":"")+esc(o)+'</span><span class="cnt">'+c+'명</span>';
+      h+=can?'<button class="ntopt'+(me?" me":"")+(win?" win":"")+'" data-act="pv" data-id="'+n.id+'" data-k="'+k+'">'+inner+'</button>':'<div class="ntopt'+(me?" me":"")+(win?" win":"")+'">'+inner+'</div>';
+      if(!n.anon&&n.voters&&n.voters[k]&&n.voters[k].length){var vs=n.voters[k].map(nm);h+='<div class="ntwho">'+esc(vs.slice(0,6).join(", "))+(vs.length>6?" 외 "+(vs.length-6)+"명":"")+'</div>'}
+    });
+    h+='<div class="ntft"><span>'+n.total+'명 참여 / '+Object.keys(S.members).length+'명'+(n.anon?' · 익명 투표':'')+'</span><span>'+(n.closed?"마감됨":(n.due?"⏰ "+ntDue(n.due)+" 마감":"마감 없음"))+'</span></div>';
+    if(n.anon&&!n.closed)h+='<div class="ntmeta">익명 투표라 앱에서는 누가 골랐는지 아무도 볼 수 없어요.</div>';
+  }
+  if(isAdmin())h+='<div class="row" style="gap:6px"><button class="btn ghost sm" data-act="ntEdit" data-id="'+n.id+'">수정</button>'+(n.poll&&!n.closed?'<button class="btn ghost sm" data-act="ntClose" data-id="'+n.id+'">지금 마감</button>':"")+'<button class="btn ghost sm" data-act="ntDel" data-id="'+n.id+'">삭제</button></div>';
+  return h+cmHTML({id:n.id,date:"9999-12-31"})+'</div>';
+}
+function viewNotice(){
+  var L=(S.d.notices||[]).slice(),open=[],past=[];
+  L.forEach(function(n){(n.poll&&n.closed?past:open).push(n)});
+  open.sort(function(a,b){
+    if(a.pin!==b.pin)return a.pin?-1:1;
+    var ap=a.poll?0:1,bp=b.poll?0:1;if(!a.pin&&ap!==bp)return ap-bp;
+    if(a.poll&&b.poll&&!a.pin)return (a.due||"9999").localeCompare(b.due||"9999")||b.at.localeCompare(a.at);
+    return b.at.localeCompare(a.at)});
+  past.sort(function(a,b){return (b.due||b.at).localeCompare(a.due||a.at)});
+  var h='<div class="row between"><h2>공지·투표</h2>'+(isAdmin()?'<button class="btn primary sm" data-act="ntNew">+ 글쓰기</button>':"")+'</div>';
+  h+=open.length?open.map(ntCard).join(""):'<div class="empty"><b>새 공지가 없어요</b>'+(isAdmin()?"‘글쓰기’로 공지나 투표를 올려 보세요.":"운영진이 공지나 투표를 올리면 여기에 보여요.")+'</div>';
+  if(past.length){h+='<button class="btn ghost" data-act="ntPast" style="align-self:flex-start">지난 투표 '+past.length+'개 '+(S.ntPast?"▴":"▾")+'</button>';if(S.ntPast)h+=past.map(ntCard).join("")}
+  return h;
+}
+function ntSheet(n){
+  var ed=!!n;n=n||{poll:false,title:"",body:"",pin:false,opts:["","",""],multi:false,anon:false,due:""};
+  var dd=new Date();dd.setDate(dd.getDate()+3);var defD=dd.getFullYear()+"-"+String(dd.getMonth()+1).padStart(2,"0")+"-"+String(dd.getDate()).padStart(2,"0");
+  var dueD=n.due?n.due.slice(0,10):defD,dueT=n.due?n.due.slice(11,16):"22:00";
+  openSheet(ed?"글 수정":"글쓰기",'<form id="ntForm" class="stack ntform" data-id="'+(ed?n.id:"")+'" data-poll="'+(n.poll?1:0)+'">'+
+    (ed?"":'<div class="seg" role="group"><button type="button" class="y" data-act="ntType" data-v="0" aria-pressed="'+!n.poll+'">📢 공지</button><button type="button" class="y" data-act="ntType" data-v="1" aria-pressed="'+!!n.poll+'">🗳 투표</button></div>')+
+    '<label class="f">제목<input id="nt-title" maxlength="60" value="'+esc(n.title)+'" placeholder="'+(n.poll?"예: 11월 회식 날짜 정해요":"예: 11월 회비 납부 안내")+'"></label>'+
+    '<label class="f">내용<textarea id="nt-body" maxlength="1000" placeholder="전달할 내용을 적어 주세요">'+esc(n.body)+'</textarea></label>'+
+    '<div id="ntPollBox" class="stack"'+(n.poll?"":' style="display:none"')+'>'+
+      '<div class="f">선택지'+(ed?' <span class="sm">(투표가 시작돼서 선택지는 바꿀 수 없어요)</span>':"")+'<div class="opts" id="ntOpts">'+(n.opts||[]).map(function(o,i){return '<input class="ntoi" maxlength="40" value="'+esc(o)+'" placeholder="선택지 '+(i+1)+'"'+(ed?" disabled":"")+'>'}).join("")+'</div>'+
+      (ed?"":'<button type="button" class="btn sm" data-act="ntAddOpt" style="align-self:flex-start;margin-top:4px">+ 선택지 추가</button>')+'</div>'+
+      '<div class="chk"><label><input type="checkbox" id="nt-multi"'+(n.multi?" checked":"")+(ed?" disabled":"")+'> 여러 개 선택</label><label><input type="checkbox" id="nt-anon"'+(n.anon?" checked":"")+(ed?" disabled":"")+'> 익명 투표</label></div>'+
+      '<div class="grid2"><label class="f">마감 날짜<input type="date" id="nt-dued" value="'+esc(dueD)+'"></label><label class="f">마감 시간<input type="time" id="nt-duet" step="1800" value="'+esc(dueT)+'"></label></div>'+
+    '</div>'+
+    '<div class="chk"><label><input type="checkbox" id="nt-pin"'+(n.pin?" checked":"")+'> 📌 맨 위에 고정</label></div>'+
+    '<button class="btn primary" type="submit" style="padding:12px">'+(ed?"저장":"올리기")+'</button></form>');
+}
+function ntVote(id,k){
+  var n=(S.d.notices||[]).filter(function(x){return x.id===id})[0];if(!n||n.closed||!myId())return;
+  var mine=(n.mine||[]).slice(),i=mine.indexOf(k);
+  if(n.multi){if(i>=0)mine.splice(i,1);else mine.push(k)}else mine=(i>=0)?[]:[k];
+  // 화면 먼저 바꾸기
+  var had=(n.mine||[]).length>0;(n.mine||[]).forEach(function(j){n.counts[j]--;if(n.voters)n.voters[j]=n.voters[j].filter(function(v){return v!==myId()})});
+  mine.forEach(function(j){n.counts[j]++;if(n.voters)n.voters[j].push(myId())});
+  n.total+=(mine.length?1:0)-(had?1:0);n.mine=mine;render();
+  call("pollVote",A,id,mine).then(function(){return refresh()}).catch(function(e){fail(e);refresh()});
+}
+
 function sessionSheet(s){
   s=s||{date:today(),time:"06:30",place:S.d.club.place,note:""};
   openSheet(s.id?"일정 수정":"일정 추가",'<form id="sessForm" class="stack" data-id="'+(s.id||"")+'"><div class="grid2"><label class="f">날짜<input type="date" id="s-date" required value="'+esc(s.date)+'"></label><label class="f">시간<input type="time" id="s-time" value="'+esc(s.time)+'"></label></div>'+
@@ -1002,6 +1093,14 @@ document.addEventListener("click",function(e){
     case"leaveCancel":{if(S.d.att[id])delete S.d.att[id][myId()];if(S.d.leave&&S.d.leave[id])delete S.d.leave[id][myId()];closeSheet();render();
       call("vote",A,id,"").catch(function(err){fail(err);refresh()});break;}
     case"newSession":sessionSheet();break;
+    case"ntNew":ntSheet();break;
+    case"ntEdit":ntSheet((S.d.notices||[]).filter(function(n){return n.id===id})[0]);break;
+    case"ntDel":if(twice("nd"+id,b,"한 번 더 누르면 삭제"))act(call("deleteNotice",A,id),"글을 지웠어요");break;
+    case"ntClose":if(twice("nc"+id,b,"한 번 더 누르면 마감"))act(call("closePoll",A,id),"투표를 마감했어요");break;
+    case"ntPast":S.ntPast=!S.ntPast;render();break;
+    case"pv":ntVote(id,+b.dataset.k);break;
+    case"ntType":{var nf=$("#ntForm");if(!nf)break;var pl=b.dataset.v==="1";nf.dataset.poll=pl?"1":"0";nf.querySelectorAll("[data-act=ntType]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});$("#ntPollBox").style.display=pl?"":"none";$("#nt-title").placeholder=pl?"예: 11월 회식 날짜 정해요":"예: 11월 회비 납부 안내";break;}
+    case"ntAddOpt":{var bx=$("#ntOpts");if(bx.children.length>=10){toast("선택지는 10개까지예요");break}var ip=document.createElement("input");ip.className="ntoi";ip.maxLength=40;ip.placeholder="선택지 "+(bx.children.length+1);bx.appendChild(ip);ip.focus();break;}
     case"editSession":sessionSheet(S.d.sessions.filter(function(s){return s.id===id})[0]);break;
     case"delSession":if(twice("ds"+id,b,"한 번 더 누르면 삭제")){closeSheet();act(call("deleteSession",A,id),"일정을 삭제했어요")}break;
     case"teams":teamSheet(id);break;
@@ -1102,6 +1201,12 @@ document.addEventListener("submit",function(e){
     call("apply",{name:v("j-name"),pos:pickedOrder("j-pos").join(","),num:v("j-num"),pin:v("j-pin"),phone:v("j-phone"),note:v("j-note")}).then(function(){
       S.gateMode="login";S.gateMsg={t:"ok",m:"가입 신청이 접수됐어요! 운영진이 승인하면 이름과 PIN으로 로그인하세요."};renderGate();
     }).catch(function(err){S.gateMsg={t:"err",m:esc(errText(err))};keepJoin();done()});
+  }else if(f.id==="ntForm"){
+    var pl=f.dataset.poll==="1",opts=[].map.call(f.querySelectorAll(".ntoi"),function(x){return x.value.trim()}).filter(function(x){return x});
+    if(!v("nt-title")){toast("제목을 입력해 주세요");done();return}
+    if(pl&&!f.dataset.id&&opts.length<2){toast("선택지를 2개 이상 입력해 주세요");done();return}
+    var due=pl&&v("nt-dued")?v("nt-dued")+" "+(v("nt-duet")||"22:00"):"";
+    closeSheet();act(call("saveNotice",A,{id:f.dataset.id,poll:pl,title:v("nt-title"),body:v("nt-body"),opts:opts,multi:!!(f.querySelector("#nt-multi")||{}).checked,anon:!!(f.querySelector("#nt-anon")||{}).checked,pin:!!(f.querySelector("#nt-pin")||{}).checked,due:due}),f.dataset.id?"글을 고쳤어요":"올렸어요");
   }else if(f.id==="sessForm"){
     closeSheet();act(call("saveSession",A,{id:f.dataset.id,date:v("s-date"),time:v("s-time"),place:v("s-place"),note:v("s-note")}),"일정을 저장했어요");
   }else if(f.id==="memForm"){
