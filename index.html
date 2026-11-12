@@ -116,7 +116,8 @@ p{margin:0}
 .lvgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.lvgrid .chip{justify-content:center;font-size:16px;padding:10px 0;font-variant-numeric:tabular-nums}
 .lvgrid .chip[aria-pressed="true"]{background:var(--late);color:#fff;border-color:var(--late)}
 .date{font-family:var(--display);font-size:22px;line-height:1}
-.date small{font-family:var(--body);font-size:13px;color:var(--muted);margin-left:6px}
+.date small{font-family:var(--body);font-size:19px;font-weight:800;color:var(--fg);margin-left:8px}
+.sinfo{font-size:17px;font-weight:700;color:var(--fg);opacity:.88;line-height:1.4}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;background:var(--surface);display:inline-flex;align-items:center;gap:5px}
 .chip .pos{font-size:11px;color:var(--muted);font-weight:700}
@@ -536,7 +537,7 @@ function sessCard(s){
   var total=Object.keys(S.members).length;
   return '<div class="card"><div class="row between"><div class="date">'+fmtDate(s.date)+'<small>'+esc(s.time)+'</small></div>'+
     (isAdmin()?'<div class="row"><button class="btn sm" data-act="teams" data-id="'+s.id+'">포메이션</button><button class="btn ghost sm" data-act="editSession" data-id="'+s.id+'">수정</button></div>':"")+'</div>'+
-    '<div class="muted sm">'+esc(s.place||"장소 미정")+(s.note?" · "+esc(s.note):"")+'</div>'+
+    '<div class="sinfo">'+esc(s.place||"장소 미정")+(s.note?" · "+esc(s.note):"")+'</div>'+
     (s.closed?'<div class="closed">🔒 출석 투표가 마감됐어요'+(mine?' · 내 응답: <b>'+(mine==="y"?"참석":mine==="e"?"조퇴"+(leaveT(s.id,myId())?" "+esc(leaveT(s.id,myId())):""):"불참")+'</b>':'')+'</div>':"")+
     (myId()&&!s.closed?'<div class="seg" role="group" aria-label="출석"><button class="y" aria-pressed="'+(mine==="y")+'" data-act="vote" data-id="'+s.id+'" data-v="y">참석</button><button class="e" aria-pressed="'+(mine==="e")+'" data-act="leave" data-id="'+s.id+'">'+(mine==="e"&&leaveT(s.id,myId())?'조퇴 '+esc(leaveT(s.id,myId())):'조퇴')+'</button><button class="n" aria-pressed="'+(mine==="n")+'" data-act="vote" data-id="'+s.id+'" data-v="n">불참</button></div>':"")+
     (isAdmin()?'<div class="row between closebar"><span class="sm muted">출석 투표 '+(s.closed?'<b class="cl">마감됨</b>':'<b class="op">진행 중</b>')+'</span><div class="row"><button class="btn sm'+(s.closed?"":" danger")+'" data-act="closeVote" data-id="'+s.id+'" data-v="1"'+(s.closed?" disabled":"")+'>마감</button><button class="btn ghost sm" data-act="closeVote" data-id="'+s.id+'" data-v="0"'+(s.closed?"":" disabled")+'>취소</button></div></div>':"")+
