@@ -255,9 +255,22 @@ details[open]>summary::after{content:" ▴"}
 .loading{opacity:.6;pointer-events:none}
 body.syncing header.top{overflow:hidden}body.syncing header.top::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:35%;background:rgba(255,255,255,.9);animation:syncbar 1.1s ease-in-out infinite}
 @keyframes syncbar{0%{left:-35%}100%{left:100%}}
+/* ── 인트로(앱 처음 켤 때) ── */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;background:radial-gradient(120% 80% at 50% 38%,#ff4fb0 0%,#ff1493 45%,#c80e74 100%);transition:opacity .35s ease;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp-cr{height:200px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.35));animation:spPop .7s cubic-bezier(.2,1.4,.4,1) both}
+#splash b{font-family:var(--display);font-weight:400;font-size:40px;letter-spacing:1px;text-shadow:0 2px 0 rgba(0,0,0,.18);margin-top:4px}
+#splash .sp-sub{font-size:13px;letter-spacing:4px;opacity:.85;margin-top:-8px;text-align:center}
+#splash .sp-bar{position:absolute;bottom:calc(110px + env(safe-area-inset-bottom,0px));width:120px;height:4px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden}
+#splash .sp-bar i{display:block;height:100%;width:0;border-radius:4px;background:#fff;animation:spBar 1s ease-out .1s forwards}
+#splash .sp-ver{position:absolute;bottom:calc(52px + env(safe-area-inset-bottom,0px));font-size:12px;opacity:.75}
+@keyframes spPop{from{transform:scale(.6);opacity:0}}
+@keyframes spBar{to{width:100%}}
+@media (prefers-reduced-motion:reduce){#splash .sp-cr{animation:none}}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><i class="crest sp-cr"></i><b>FC 수원호랑이</b><span class="sp-sub">SUWON TIGERS FOOTBALL CLUB</span><span class="sp-bar"><i></i></span><span class="sp-ver"></span></div>
 <header class="top"><div class="wrap">
   <div class="brand"><div class="logo"><i class="crest crest-h" aria-hidden="true"></i><h1 id="clubName">FC 수원호랑이</h1></div><div class="side" id="side"></div></div>
   <nav class="tabs" id="tabs" role="tablist"></nav>
@@ -289,6 +302,10 @@ var CHANGELOG=[
     "경기 기록(득점·도움·클린시트), 팀 기록(월별·최근 4경기), 개인 기록",
     "회비 납부 관리·회비 장부(수입·지출·잔액), 시즌별 기록, 팀 엠블럼, 홈 화면 추가 안내"]}
 ];
+/* ── 인트로: 앱을 새로 켤 때 1초 정도 보여주고 사라짐 (누르면 바로 넘어감) ── */
+(function(){var sp=document.getElementById("splash");if(!sp)return;var v=CHANGELOG[0];sp.querySelector(".sp-ver").textContent="v"+v.v+" "+v.tag;
+  function hide(){if(sp.classList.contains("out"))return;sp.classList.add("out");setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp)},400)}
+  sp.addEventListener("click",hide);setTimeout(hide,1200)})();
 /* ── 홈 화면 추가 안내 ── */
 var UA=navigator.userAgent||"";
 function devKind(){if(/iPhone|iPad|iPod/.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1))return"ios";if(/SamsungBrowser/i.test(UA))return"samsung";if(/Android/i.test(UA))return"android";return"pc"}
