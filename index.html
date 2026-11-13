@@ -94,6 +94,19 @@ p{margin:0}
 .c.mk .bd{outline:2px solid var(--brand);outline-offset:2px}
 .cin{display:flex;gap:6px;align-items:center}.cin input{flex:1;min-width:0;border:1px solid var(--line);border-radius:20px;padding:9px 14px;font-size:16px;background:var(--surface);color:var(--fg)}
 .rto{font-size:12px;background:var(--sunk);color:var(--brand);border-radius:8px;padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
+.c .pk{position:relative}
+.rxs{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;align-items:center}.rxs .ac{margin:0 0 0 4px;padding:0}
+.rx{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:2px 8px 2px 6px;font:inherit;font-size:13px;font-weight:700;color:var(--fg);line-height:1.4;cursor:pointer}
+.rx i{font-style:normal;font-size:15px;display:inline-flex}.rx .ck{width:16px;height:16px}
+.rx.on{border-color:var(--brand);background:var(--sunk);background:color-mix(in srgb,var(--brand) 14%,var(--surface));color:var(--brand)}
+.rxadd{display:inline-flex;align-items:center;border:1px dashed var(--line);background:none;border-radius:14px;padding:2px 9px;font:inherit;font-size:13px;color:var(--muted);line-height:1.4;cursor:pointer}
+.rxadd.hl{border:1px solid var(--brand);color:var(--brand)}
+.pick{position:absolute;left:0;top:calc(100% + 4px);z-index:6;display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:4px 6px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.c.reply .pick{left:-38px}
+.pick button{font-size:23px;width:34px;height:38px;display:grid;place-items:center;border-radius:50%;border:0;background:none;padding:0;cursor:pointer;line-height:1}
+.pick button.on{background:var(--sunk);background:color-mix(in srgb,var(--brand) 16%,var(--surface))}.pick .ck{width:26px;height:26px}
+.rwho{position:absolute;left:0;top:calc(100% + 4px);z-index:6;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 12px;box-shadow:0 6px 20px rgba(0,0,0,.2);font-size:14px;min-width:190px;max-width:100%;display:flex;flex-direction:column;gap:6px}
+.rwho div{display:flex;gap:8px;align-items:flex-start}.rwho i{font-style:normal;font-size:17px;width:22px;flex:none;display:inline-flex}.rwho .ck{width:18px;height:18px;margin-top:2px}
 .cmclosed{font-size:13px;color:var(--muted);background:var(--sunk);border-radius:9px;padding:8px 10px}
 .tops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .card.tk{padding:12px 12px 10px;gap:6px}
@@ -580,8 +593,22 @@ function cmTime(at){if(!at)return"";var d=at.slice(0,10),t=at.slice(11,16),td=to
   return (d===td?"오늘":d===yd?"어제":(+d.slice(5,7))+"/"+(+d.slice(8)))+" "+t}
 function cmOne(c,sid,isReply,past){var m=S.members[c.mid],own=(c.mid&&c.mid===myId())||(!c.mid&&!myId()&&isAdmin());
   var av=m?(m.num||m.name.slice(0,1)):"운영",name=m?m.name:(c.name||"운영진"),rp=S.reply&&S.reply[sid]===c.id;
-  return '<div class="c'+(isReply?" reply":"")+(rp?" mk":"")+'"><div class="av">'+esc(av)+'</div><div style="flex:1;min-width:0"><div class="bd"><div class="nm">'+esc(name)+'<em>'+esc(cmTime(c.at))+'</em></div><div class="tx">'+esc(c.text)+'</div></div>'+
-    '<div class="ac">'+(past?'':'<button class="lk" data-act="cmReply" data-id="'+sid+'" data-c="'+c.id+'"><b>답글</b></button>')+((own||isAdmin())&&c.id.indexOf("tmp")!==0?'<button class="lk" data-act="cmDel" data-c="'+c.id+'">삭제</button>':'')+'</div></div></div>'}
+  return '<div class="c'+(isReply?" reply":"")+(rp?" mk":"")+'"><div class="av">'+esc(av)+'</div><div class="pk" style="flex:1;min-width:0"><div class="bd"><div class="nm">'+esc(name)+'<em>'+esc(cmTime(c.at))+'</em></div><div class="tx">'+esc(c.text)+'</div></div>'+
+    '<div class="rxs">'+rxHTML(c)+'<span class="ac">'+(past?'':'<button class="lk" data-act="cmReply" data-id="'+sid+'" data-c="'+c.id+'"><b>답글</b></button>')+((own||isAdmin())&&c.id.indexOf("tmp")!==0?'<button class="lk" data-act="cmDel" data-c="'+c.id+'">삭제</button>':'')+'</span></div>'+
+    (S.rxPick===c.id?rxPickHTML(c):'')+(S.rxWho===c.id?rxWhoHTML(c):'')+'</div></div>'}
+/* ── 댓글 공감 이모티콘(한 사람 한 댓글에 하나) ── */
+var RXS=[["ck",'<svg class="ck" viewBox="0 0 24 24" aria-label="확인"><circle cx="12" cy="12" r="11" fill="#2f80ed"/><path d="M6.5 12.4l3.6 3.6 7.4-7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'],["up","👍"],["ht","❤️"],["lol","😂"],["clap","👏"],["mus","💪"],["ball","⚽"]];
+function rxOf(c){var r=(S.d.reacts||{})[c.id]||{},o={};Object.keys(r).forEach(function(m){if(S.members[m])o[m]=r[m]});return o}
+function rxHTML(c){var r=rxOf(c),me=myId(),cnt={};Object.keys(r).forEach(function(m){cnt[r[m]]=(cnt[r[m]]||0)+1});
+  var h=RXS.filter(function(k){return cnt[k[0]]}).map(function(k){return '<button class="rx'+(me&&r[me]===k[0]?" on":"")+'" data-act="rxWho" data-c="'+c.id+'"><i>'+k[1]+'</i>'+cnt[k[0]]+'</button>'}).join("");
+  if(me&&c.id.indexOf("tmp")!==0)h+='<button class="rxadd'+(S.rxPick===c.id?" hl":"")+'" data-act="rxPick" data-c="'+c.id+'" aria-label="공감 이모티콘 달기">☺+</button>';
+  return h}
+function rxPickHTML(c){var mine=rxOf(c)[myId()];
+  return '<div class="pick">'+RXS.map(function(k){return '<button class="'+(mine===k[0]?"on":"")+'" data-act="rxSet" data-c="'+c.id+'" data-k="'+k[0]+'">'+k[1]+'</button>'}).join("")+'</div>'}
+function rxWhoHTML(c){var r=rxOf(c),me=myId(),g={};Object.keys(r).forEach(function(m){(g[r[m]]=g[r[m]]||[]).push(m)});
+  return '<div class="rwho">'+RXS.filter(function(k){return g[k[0]]}).map(function(k){
+    var ns=g[k[0]].sort(function(a,b){return a===me?1:b===me?-1:nm(a).localeCompare(nm(b),"ko")}).map(function(m){return m===me?"나":"<b>"+esc(nm(m))+"</b>"});
+    return '<div><i>'+k[1]+'</i><span>'+ns.join(", ")+'</span></div>'}).join("")+'</div>'}
 function cmHTML(s){
   var past=s.date<today(),list=((S.d.comments||{})[s.id])||[],open=!!(S.cmOpen&&S.cmOpen[s.id]);S.cmDraft=S.cmDraft||{};
   var tops=list.filter(function(c){return !c.pid||!list.some(function(x){return x.id===c.pid})}),kids={};
@@ -1061,6 +1088,7 @@ document.addEventListener("pointerup",endDrag);document.addEventListener("pointe
 document.addEventListener("click",function(e){
   if(DRAG.justDragged){DRAG.justDragged=false;return}
   var b=e.target.closest("[data-act],[data-tab]");
+  if((S.rxPick||S.rxWho)&&!(b&&/^rx/.test(b.dataset.act||""))){S.rxPick=S.rxWho=null;render();if(!b)return}
   if(!b){if(e.target.id==="scrim")closeSheet();return}
   if(b.dataset.tab){S.tab=b.dataset.tab;render();window.scrollTo(0,0);return}
   var a=b.dataset.act,id=b.dataset.id;
@@ -1083,6 +1111,11 @@ document.addEventListener("click",function(e){
     case"cmReply":S.reply=S.reply||{};S.reply[id]=b.dataset.c;S.cmOpen=S.cmOpen||{};S.cmOpen[id]=true;render();setTimeout(function(){var i=document.querySelector('.cinput[data-id="'+id+'"]');if(i)i.focus()},50);break;
     case"cmReplyX":if(S.reply)delete S.reply[id];render();break;
     case"cmSend":cmSend(id);break;
+    case"rxPick":{var rc=b.dataset.c;S.rxWho=null;S.rxPick=S.rxPick===rc?null:rc;render();break;}
+    case"rxWho":{var wc=b.dataset.c;S.rxPick=null;S.rxWho=S.rxWho===wc?null:wc;render();break;}
+    case"rxSet":{var sc=b.dataset.c,sk=b.dataset.k,mm=myId();S.rxPick=null;if(!mm){toast("회원으로 로그인해야 누를 수 있어요");render();break}
+      S.d.reacts=S.d.reacts||{};var RR=S.d.reacts[sc]=S.d.reacts[sc]||{},nv=RR[mm]===sk?"":sk;if(nv)RR[mm]=nv;else delete RR[mm];render();
+      call("react",A,sc,nv).catch(function(e){fail(e);refresh()});break;}
     case"cmDel":{if(b.dataset.ask!=="1"){b.dataset.ask="1";b.textContent="한 번 더 누르면 삭제";setTimeout(function(){if(b.isConnected){b.dataset.ask="";b.textContent="삭제"}},3000);break}
       var cid=b.dataset.c;Object.keys(S.d.comments||{}).forEach(function(k){S.d.comments[k]=S.d.comments[k].filter(function(c){return c.id!==cid&&c.pid!==cid})});render();
       call("deleteComment",A,cid).then(function(){toast("댓글을 지웠어요");return refresh()}).catch(function(e){fail(e);refresh()});break;}
