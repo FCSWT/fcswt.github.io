@@ -1,5 +1,5 @@
 /* FC 수원호랑이 앱 — 화면 파일을 폰에 저장해 두고 바로 열기 (데이터는 항상 서버에서) */
-const CACHE = 'fc-swt-v18';
+const CACHE = 'fc-swt-v19';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
